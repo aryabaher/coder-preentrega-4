@@ -1,0 +1,267 @@
+# RAG híbrido en Pinecone
+
+Servicio en Python que ingesta las políticas internas de TechCorp en un índice Pinecone Serverless, recupera con un `EnsembleRetriever` (BM25 + vectores) y mide Precision@5 y Recall@5 sobre 5 preguntas.
+
+El embedding es `sentence-transformers/all-MiniLM-L6-v2` (384 dimensiones, cosine). Sin API key el mismo flujo corre en memoria, con un embedding determinista del mismo ancho. Con `--live` crea el índice y usa el modelo local de verdad.
+
+## Quick path
+
+1. Instalar. Un `pip install -r requirements.txt` alcanza (incluye `pytest`, `pytest-asyncio` y `pytest-mock`).
+
+**Windows (PowerShell):**
+
+```powershell
+py -3.12 -m venv .venv
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+Copy-Item .env.example .env
+```
+
+**Linux/macOS (bash/zsh):**
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+```
+
+2. Chequeo offline (no llama a Pinecone ni baja el modelo) y tests:
+
+```
+python validacion.py
+python -m pytest -v
+python evaluate.py
+python main.py
+```
+
+`evaluate.py` imprime Recall@5 promedio 100% y Precision@5 promedio 25%. En las cinco preguntas el archivo esperado es el primer resultado.
+
+## Replicar el índice en Pinecone
+
+`.env` (no se versiona) necesita:
+
+```
+PINECONE_API_KEY=
+INDEX_NAME=techcorp-rag-hibrido
+```
+
+El ejemplo está en `.env.example`.
+
+**Windows (PowerShell):**
+
+```powershell
+python init_index.py --live --dimension 384
+python main.py --live --chunk-size 600 --chunk-overlap 100 --batch-size 100 --k 5
+python evaluate.py --live --k 5
+```
+
+**Linux/macOS (bash/zsh):**
+
+```bash
+python init_index.py --live --dimension 384
+python main.py --live --chunk-size 600 --chunk-overlap 100 --batch-size 100 --k 5
+python evaluate.py --live --k 5
+```
+
+`init_index.py --live` hace esto:
+
+1. Lee `PINECONE_API_KEY` e `INDEX_NAME` (default `techcorp-rag-hibrido`).
+2. Arma `indices_existentes = [i["name"] for i in pc.list_indexes()]`.
+3. Si el nombre no está, crea un índice Serverless con `ServerlessSpec(cloud="aws", region="us-east-1")`, `metric="cosine"` y `dimension=EMBEDDING_DIM` (384). Espera a que quede ready.
+4. Si ya existe, compara dimensión y métrica. Un índice de 1536 (otro modelo) o con métrica distinta se aborta. No se reintenta y no se borra: hay que elegir otro `INDEX_NAME` o eliminarlo en la consola de Pinecone.
+
+`main.py --live` carga los `.txt` de `data/` con `DirectoryLoader` + `TextLoader`, los parte con `RecursiveCharacterTextSplitter.from_tiktoken_encoder` (default `chunk_size=600`, `chunk_overlap=100`) y los sube con `PineconeVectorStore.from_documents` al namespace `politicas-internas`. El texto queda en `metadata["text"]`. La fuente es el nombre del archivo y la categoría es ese nombre sin `.txt` ni guiones bajos.
+
+El mismo par embedding/índice tiene que usarse al indexar y al consultar. `--live` en los dos comandos usa el modelo de 384. El modo offline no toca Pinecone.
+
+`--chunk-size`, `--chunk-overlap`, `--batch-size`, `--k` y `--dimension` llegan al splitter, al `upsert` y al retriever. El default no los pisa.
+
+## Archivos del repositorio
+
+| Artefacto | Dónde está |
+|-----------|------------|
+| `asegurar_indice` (Serverless, lista de índices, mismatch) | `init_index.py` |
+| `DirectoryLoader` / `TextLoader`, chunks, `from_documents`, CRUD | `ingesta.py` |
+| `class RAGSystem` y `obtener_top_k` | `rag_system.py` |
+| `BM25Retriever` + `PineconeVectorStore` en un `EnsembleRetriever` | `rag_system.py` |
+| `evaluar` (Recall@5, Precision@5 y los promedios) | `evaluate.py` |
+| Golden set `{"pregunta", "documento_id_esperado"}` | `evaluate.py` y `data/golden_set.json` |
+| Políticas de TechCorp | `data/*.txt` |
+| Errores 401 / 429 / red / mismatch / schema / truncado | `errors.py`, `reintentos.py` |
+| `HuggingFaceEmbeddings` o el sustituto offline de 384 | `embeddings.py` |
+| Demo | `main.py` |
+| Chequeo offline | `validacion.py` |
+| Tests | `tests/` |
+| `pytest.ini` | `testpaths = tests` · `asyncio_mode = auto` · `addopts = -ra -q` |
+
+## Cómo se cubre la consigna
+
+| Requisito | Cómo se cumple | Evidencia |
+|-----------|----------------|-----------|
+| Variables | `PINECONE_API_KEY` e `INDEX_NAME` | `test_leer_config_toma_el_entorno` |
+| Índice Serverless | `ServerlessSpec` aws `us-east-1`, cosine, `dimension=EMBEDDING_DIM` (384) | `test_crea_indice_serverless_con_la_dimension_del_modelo` |
+| Mismatch | Índice existente en 1536D o métrica `euclidean` aborta, sin reintento | `test_mismatch_de_dimension_no_reintenta` · `test_mismatch_de_metrica_en_indice_existente` |
+| Dataset | Cuatro `.txt` en `data/`, cargados con `DirectoryLoader` y `TextLoader` | `test_carga_los_txt_de_techcorp` |
+| Chunks | `from_tiktoken_encoder(chunk_size=chunk_size, chunk_overlap=chunk_overlap)`. Default 600 / 100, rango 500–800 | `test_splitter_usa_el_chunk_size_de_la_llamada` |
+| Metadata | `metadata["text"]`, `source` (archivo) y `categoria` (nombre legible). `chunk_id` es el índice del fragmento | `test_metadata_sale_del_nombre_de_archivo` |
+| Ingesta | `PineconeVectorStore.from_documents(..., namespace=politicas-internas)`. En offline, `add_documents` por lotes | `test_subida_guarda_texto_y_filtra_por_namespace` |
+| Lotes | `partir_en_lotes(..., chunk_size=batch_size)` y `batch_size` llega a `add_documents`. Default 100 | `test_batch_size_llega_al_upsert_y_no_se_clava_en_100` |
+| Namespaces | El corpus vive en `politicas-internas`. También `ns-dev` / `ns-staging` / `ns-prod` y `ns-cliente-<id>` | `test_namespaces_de_entorno_y_de_tenant` · `test_namespace_no_mezcla_al_tenant` |
+| Reintentos | 429 y red/timeout: 3 intentos, 0.5s → 1s → 2s. 401 y mismatch: un solo intento | `test_429_reintenta_y_luego_crea` · `test_401_en_upsert_no_reintenta` |
+| CRUD | `fetch`, `update` con `set_metadata`, `delete` por id, `delete_all=True` | `test_crud_fetch_update_delete_y_delete_all` |
+| Híbrido | `BM25Retriever.from_documents`, `retriever_bm25.k = 5`, `as_retriever(search_kwargs={"k": 5, "namespace": NAMESPACE})`, `EnsembleRetriever` con `weights=[0.5, 0.5]` | `test_k_de_la_llamada_llega_al_bm25_y_a_pinecone` |
+| `RAGSystem` | `obtener_top_k` devuelve `contenido`, `fuente` y `categoria`. El `k` del sistema llega a los dos retrievers | `test_token_raro_queda_primero_y_el_default_es_top_5` |
+| Métricas | `evaluar` calcula `recall@5`, `precision@5`, `recall@5_promedio` y `precision@5_promedio` | `test_corpus_real_recupera_el_documento_esperado` |
+
+## Contrato de namespaces y metadatos
+
+- **Corpus:** `politicas-internas`. Un solo espacio para las cuatro políticas.
+- **Entornos y tenants, aparte:** `ns-dev`, `ns-staging`, `ns-prod` y `ns-cliente-<id>`. Un upsert no mezcla dos espacios. Query, fetch, update y delete llevan `namespace=`.
+- **Metadata:** `text` (el fragmento), `source` (por ejemplo `politica_vacaciones.txt`), `categoria` (por ejemplo `politica vacaciones`), `chunk_id` (entero).
+- **Filtro:** `{"source": {"$eq": "politica_vacaciones.txt"}}` junto con `include_metadata=True`.
+- **Métrica:** cosine. El modelo local es de 384. Un índice de 1536 no sirve para este embedding.
+
+## Por qué 384, cosine y búsqueda híbrida
+
+`all-MiniLM-L6-v2` se compara por coseno y devuelve 384 números. Fijar 1536 a mano armaría un índice de otro modelo: por eso `EMBEDDING_DIM` es el mismo valor al crear el índice y al embeddear. El corte default de 600 tokens (piso 500, techo 800) y el overlap de 100 llegan tal cual a `from_tiktoken_encoder`. BM25 sostiene términos literales (`2FA`, `Soporte Técnico Nivel 1`); el vector sostiene el parafraseo. El `EnsembleRetriever` los junta con pesos iguales.
+
+## Evaluación
+
+Cinco preguntas, cada una con un solo `documento_id_esperado` (el nombre del `.txt`).
+
+- **Recall@5** = 1 si esa fuente aparece entre lo recuperado, si no 0. Con un único documento relevante no hay un valor intermedio.
+- **Precision@5** = coincidencias / cantidad recuperada.
+
+Hay 4 fragmentos y `k=5`, así que el top incluye el corpus entero: Recall@5 promedio = 1 y Precision@5 promedio = 1/4 = 0.25. Aun así el archivo correcto queda primero en las cinco preguntas.
+
+Salida de `python evaluate.py`:
+
+```
+RECALL@5 PROMEDIO:    100.0%
+PRECISION@5 PROMEDIO: 25.0%
+Precision@5: 0.2500
+Recall@5: 1.0000
+```
+
+`obtener_top_k` devuelve una lista de dicts con `contenido`, `fuente` y `categoria`.
+
+## Manejo de errores personalizados
+
+`main.py`, `evaluate.py` e `init_index.py` capturan `RAGCloudError` e imprimen `Error controlado: ...` con código de salida 1.
+
+### 401 / key
+
+**Mensaje:** `401/key: falta PINECONE_API_KEY en las variables de entorno.`
+
+**Cómo reproducirlo:** `python init_index.py --live` sin `PINECONE_API_KEY`.
+
+**Test:** `tests/test_init_index.py::test_falta_api_key`
+
+Si la API responde unauthorized: `401/key: clave de Pinecone inválida o ausente. Detalle: Unauthorized: invalid API key`. No se reintenta (`test_401_en_list_indexes_no_reintenta`, `test_401_en_upsert_no_reintenta`).
+
+### 429 / cuota
+
+**Mensaje:** `429/cuota: Pinecone rechazó la operación por cuota o rate limit. Detalle: rate limit / quota exceeded`
+
+**Cómo reproducirlo:** un `list_indexes` o un `upsert` con status 429. Hay hasta 3 intentos; entre el primero y el segundo espera 0.5s y entre el segundo y el tercero 1s (en tests la espera es 0). Si el segundo responde bien, la operación sigue.
+
+**Test:** `tests/test_init_index.py::test_429_agotado` · `test_429_reintenta_y_luego_crea` · `tests/test_ingesta.py::test_429_en_upsert_reintenta_y_recupera`
+
+### red / timeout
+
+**Mensaje:** `red/timeout: no se pudo hablar con Pinecone. Detalle: Request timed out talking to Pinecone`
+
+**Cómo reproducirlo:** un `TimeoutError` en el upsert. Se reintenta igual que el 429.
+
+**Test:** `tests/test_ingesta.py::test_timeout_en_upsert_se_agota`
+
+Si el índice no pasa a ready: `red/timeout: el índice techcorp-rag-hibrido no quedó ready en 0s.` (`test_indice_no_ready_es_timeout`).
+
+### Mismatch de dimensiones
+
+**Mensaje:** `Mismatch de dimensiones: el índice techcorp-rag-hibrido es 1536D y se pidió 384D.`
+
+**Cómo reproducirlo:** el índice ya existe con el ancho de otro modelo. No se reintenta y no se llama a `create_index`.
+
+**Test:** `tests/test_init_index.py::test_mismatch_de_dimension_no_reintenta`
+
+`dimension=0`: `Mismatch de dimensiones: dimension=0 es inválida (tiene que coincidir con el embedding, p.ej. 384).` (`test_dimension_invalida`).
+
+Vector de otro largo: `Mismatch de dimensiones: el vector es 2D y el índice es 8D.` (`test_mismatch_de_vector_no_reintenta`).
+
+Pedir 1536 con el modelo local: `Mismatch de dimensiones: sentence-transformers/all-MiniLM-L6-v2 es 384D y se pidió 1536D.` (`test_huggingface_rechaza_otra_dimension`).
+
+### Mismatch de métrica
+
+**Mensaje:** `Mismatch de métrica: se pidió euclidean y all-MiniLM-L6-v2 usa cosine.`
+
+**Cómo reproducirlo:** pedir `metric="euclidean"`, o apuntar a un índice que ya es `euclidean`.
+
+**Test:** `tests/test_init_index.py::test_metrica_euclidean_no_llega_a_crear` · `test_mismatch_de_metrica_en_indice_existente`
+
+### Schema drift
+
+**Mensaje:** `Schema drift: ['date_created'] no pertenece al contrato de metadatos.`
+
+**Cómo reproducirlo:** un documento cuya metadata trae `date_created`, `ingest_date`, `created_at` o `fecha`.
+
+**Test:** `tests/test_ingesta.py::test_schema_drift_en_el_documento` · `test_pydantic_rechaza_campo_extra`
+
+### Salida truncada
+
+**Mensaje:** `Salida truncada: el chunk 0 supera 20000 caracteres y no se recorta en silencio.`
+
+**Cómo reproducirlo:** un fragmento de más de 20000 caracteres. No se recorta para entrar en la metadata. El test baja el tope a 10 caracteres (`test_salida_truncada_no_recorta`).
+
+### Consulta vacía
+
+**Mensaje:** `Consulta vacía: no hay texto para recuperar.`
+
+**Cómo reproducirlo:** `rag_system.obtener_top_k("   ")`.
+
+**Test:** `tests/test_rag.py::test_consulta_vacia`
+
+### Lote, k o chunk fuera de rango
+
+**Mensaje:** `chunk_size debe ser un entero >= 500 y <= 800. Recibido: 499.`
+
+**Cómo reproducirlo:** `construir_splitter(chunk_size=499)` o `chunk_size=801`. `batch_size=1001`: `batch_size debe ser un entero entre 1 y 1000 (límite de la API). Recibido: 1001.` `k=0`: `k debe ser un entero entre 1 y 100. Recibido: 0.`
+
+**Test:** `tests/test_ingesta.py::test_chunk_size_fuera_de_rango` · `test_batch_size_y_k_fuera_de_limite`
+
+### Error no transitorio
+
+**Mensaje:** `Error de Pinecone: boom`
+
+**Cómo reproducirlo:** una excepción que no es 401, 429 ni red. No se reintenta.
+
+**Test:** `tests/test_ingesta.py::test_error_no_transitorio_no_reintenta`
+
+## Evidencias
+
+| Archivo | Qué muestra |
+|---------|-------------|
+| `evidencias/01-validacion-offline.txt` | `python validacion.py`: cadenas, familias de error y Precision@5 / Recall@5. |
+| `evidencias/02-pytest.txt` | `python -m pytest -o addopts= -v -ra`. |
+| `evidencias/03-evaluate.txt` | `python evaluate.py`. |
+| `evidencias/04-main.txt` | `python main.py`: ingesta, una consulta y el reporte. |
+| `evidencias/05-init-index.txt` | `python init_index.py`: índice local, sin crear nada en Pinecone. |
+
+## Checklist
+
+- [x] `.env.example` con `PINECONE_API_KEY` e `INDEX_NAME=techcorp-rag-hibrido` (el `.env` real no se versiona)
+- [x] `init_index.py` crea el índice Serverless de 384 / cosine si no existe y aborta si no coincide
+- [x] `DirectoryLoader` + `TextLoader` sobre los `.txt` de TechCorp
+- [x] `from_tiktoken_encoder` con `chunk_size` y `chunk_overlap` de la llamada (default 600 / 100)
+- [x] Texto original en `metadata["text"]`, más `source`, `categoria` y `chunk_id`
+- [x] Namespace `politicas-internas`, y también `ns-dev` / `ns-staging` / `ns-prod` / `ns-cliente-<id>`
+- [x] `PineconeVectorStore.from_documents` y lotes con reintentos ante 429 y red
+- [x] CRUD: fetch, update de metadatos, delete por id y `delete_all` por namespace
+- [x] `class RAGSystem` con `obtener_top_k`, `BM25Retriever` y `EnsembleRetriever`
+- [x] `evaluar` con Recall@5 y Precision@5 sobre 5 preguntas
+- [x] Resumen de métricas en consola y en este README
+- [x] pytest + mocks, sin API real
+- [x] Una subsección por familia de error, con el mensaje, cómo reproducirlo y el test
+- [x] `evidencias/` con la salida real de los comandos

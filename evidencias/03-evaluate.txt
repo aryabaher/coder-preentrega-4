@@ -1,0 +1,25 @@
+$ python evaluate.py
+================================================================================
+OK ¿Cuántos días de vacaciones corresponden a un empleado con 6 años de antigüedad?
+   Esperado: politica_vacaciones.txt | Recuperados: ['politica_vacaciones.txt', 'politica_teletrabajo.txt', 'politica_seguridad_informatica.txt', 'onboarding_nuevos_empleados.txt']
+   Recall@5: 100% | Precision@5: 25%
+OK ¿Cuántos días de trabajo remoto por semana tiene el esquema estándar de TechCorp?
+   Esperado: politica_teletrabajo.txt | Recuperados: ['politica_teletrabajo.txt', 'onboarding_nuevos_empleados.txt', 'politica_seguridad_informatica.txt', 'politica_vacaciones.txt']
+   Recall@5: 100% | Precision@5: 25%
+OK ¿Cada cuánto deben renovarse las contraseñas corporativas?
+   Esperado: politica_seguridad_informatica.txt | Recuperados: ['politica_seguridad_informatica.txt', 'politica_teletrabajo.txt', 'politica_vacaciones.txt', 'onboarding_nuevos_empleados.txt']
+   Recall@5: 100% | Precision@5: 25%
+OK ¿Cuánto dura el proceso de onboarding en TechCorp?
+   Esperado: onboarding_nuevos_empleados.txt | Recuperados: ['onboarding_nuevos_empleados.txt', 'politica_seguridad_informatica.txt', 'politica_teletrabajo.txt', 'politica_vacaciones.txt']
+   Recall@5: 100% | Precision@5: 25%
+OK ¿Qué esquema de trabajo tienen las áreas de Soporte Técnico Nivel 1 y Recepción?
+   Esperado: politica_teletrabajo.txt | Recuperados: ['politica_teletrabajo.txt', 'politica_vacaciones.txt', 'politica_seguridad_informatica.txt', 'onboarding_nuevos_empleados.txt']
+   Recall@5: 100% | Precision@5: 25%
+================================================================================
+RECALL@5 PROMEDIO:    100.0%
+PRECISION@5 PROMEDIO: 25.0%
+Precision@k: 0.2500
+Recall@k: 1.0000
+Precision@5: 0.2500
+Recall@5: 1.0000
+top-5 documentos por pregunta

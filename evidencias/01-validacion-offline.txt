@@ -1,0 +1,112 @@
+$ python validacion.py
+[OK] cadena PINECONE_API_KEY
+[OK] cadena INDEX_NAME
+[OK] cadena techcorp-rag-hibrido
+[OK] cadena [i["name"] for i in pc.list_indexes()]
+[OK] cadena ServerlessSpec
+[OK] cadena cloud="aws"
+[OK] cadena region="us-east-1"
+[OK] cadena metric="cosine"
+[OK] cadena dimension=dimension
+[OK] cadena EMBEDDING_DIM
+[OK] cadena EMBEDDING_MODEL
+[OK] cadena sentence-transformers/all-MiniLM-L6-v2
+[OK] cadena HuggingFaceEmbeddings
+[OK] cadena 384
+[OK] cadena DirectoryLoader
+[OK] cadena TextLoader
+[OK] cadena RecursiveCharacterTextSplitter
+[OK] cadena from_tiktoken_encoder
+[OK] cadena chunk_size=chunk_size
+[OK] cadena chunk_overlap=chunk_overlap
+[OK] cadena chunk_size=600
+[OK] cadena chunk_overlap=100
+[OK] cadena chunk_size=100
+[OK] cadena PineconeVectorStore.from_documents
+[OK] cadena BM25Retriever.from_documents
+[OK] cadena retriever_bm25.k = 5
+[OK] cadena search_kwargs={"k": 5, "namespace": NAMESPACE}
+[OK] cadena EnsembleRetriever
+[OK] cadena weights=[0.5, 0.5]
+[OK] cadena class RAGSystem
+[OK] cadena def obtener_top_k
+[OK] cadena contenido
+[OK] cadena categoria
+[OK] cadena politicas-internas
+[OK] cadena politica_vacaciones.txt
+[OK] cadena include_metadata=True
+[OK] cadena filter=filtro
+[OK] cadena namespace=namespace
+[OK] cadena delete_all=True
+[OK] cadena documento_id_esperado
+[OK] cadena pregunta
+[OK] cadena recall@5
+[OK] cadena precision@5
+[OK] cadena recall@5_promedio
+[OK] cadena precision@5_promedio
+[OK] cadena Precision@5
+[OK] cadena Recall@5
+[OK] cadena Precision@k
+[OK] cadena Recall@k
+[OK] cadena top-5
+[OK] cadena ns-dev
+[OK] cadena ns-staging
+[OK] cadena ns-prod
+[OK] cadena ns-cliente-
+[OK] cadena cosine
+[OK] cadena 1536
+[OK] cadena metadata["text"]
+[OK] cadena 401/key
+[OK] cadena 429/cuota
+[OK] cadena red/timeout
+[OK] cadena Mismatch de dimensiones
+[OK] cadena Mismatch de métrica
+[OK] cadena Salida truncada
+[OK] cadena Schema drift
+401 pinecone: 401/key: falta PINECONE_API_KEY en las variables de entorno.
+[OK] 401 pinecone
+429: 429/cuota: Pinecone rechazó la operación por cuota o rate limit. Detalle: rate limit / quota exceeded
+[OK] 429
+red: red/timeout: no se pudo hablar con Pinecone. Detalle: Request timed out talking to Pinecone
+[OK] red
+mismatch: Mismatch de dimensiones: dimension=0 es inválida (tiene que coincidir con el embedding, p.ej. 384).
+[OK] mismatch dimension
+metrica: Mismatch de métrica: se pidió euclidean y all-MiniLM-L6-v2 usa cosine.
+[OK] mismatch metrica
+schema: Schema drift: ['date_created'] no pertenece al contrato de metadatos.
+[OK] schema drift
+truncado: Salida truncada: el chunk 0 supera 5 caracteres y no se recorta en silencio.
+[OK] salida truncada
+chunk: chunk_size debe ser un entero >= 500 y <= 800. Recibido: 200.
+[OK] chunk_size
+consulta: Consulta vacía: no hay texto para recuperar.
+[OK] consulta vacia
+no transitorio: Error de Pinecone: boom
+[OK] no transitorio
+================================================================================
+OK ¿Cuántos días de vacaciones corresponden a un empleado con 6 años de antigüedad?
+   Esperado: politica_vacaciones.txt | Recuperados: ['politica_vacaciones.txt', 'politica_teletrabajo.txt', 'politica_seguridad_informatica.txt', 'onboarding_nuevos_empleados.txt']
+   Recall@5: 100% | Precision@5: 25%
+OK ¿Cuántos días de trabajo remoto por semana tiene el esquema estándar de TechCorp?
+   Esperado: politica_teletrabajo.txt | Recuperados: ['politica_teletrabajo.txt', 'onboarding_nuevos_empleados.txt', 'politica_seguridad_informatica.txt', 'politica_vacaciones.txt']
+   Recall@5: 100% | Precision@5: 25%
+OK ¿Cada cuánto deben renovarse las contraseñas corporativas?
+   Esperado: politica_seguridad_informatica.txt | Recuperados: ['politica_seguridad_informatica.txt', 'politica_teletrabajo.txt', 'politica_vacaciones.txt', 'onboarding_nuevos_empleados.txt']
+   Recall@5: 100% | Precision@5: 25%
+OK ¿Cuánto dura el proceso de onboarding en TechCorp?
+   Esperado: onboarding_nuevos_empleados.txt | Recuperados: ['onboarding_nuevos_empleados.txt', 'politica_seguridad_informatica.txt', 'politica_teletrabajo.txt', 'politica_vacaciones.txt']
+   Recall@5: 100% | Precision@5: 25%
+OK ¿Qué esquema de trabajo tienen las áreas de Soporte Técnico Nivel 1 y Recepción?
+   Esperado: politica_teletrabajo.txt | Recuperados: ['politica_teletrabajo.txt', 'politica_vacaciones.txt', 'politica_seguridad_informatica.txt', 'onboarding_nuevos_empleados.txt']
+   Recall@5: 100% | Precision@5: 25%
+================================================================================
+RECALL@5 PROMEDIO:    100.0%
+PRECISION@5 PROMEDIO: 25.0%
+Precision@k: 0.2500
+Recall@k: 1.0000
+Precision@5: 0.2500
+Recall@5: 1.0000
+top-5 documentos por pregunta
+[OK] recall
+[OK] precision
+validacion=OK

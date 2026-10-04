@@ -1,0 +1,62 @@
+$ python -m pytest -o addopts= -v -ra
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0 -- C:\Software\Coder\coder-preentrega-4\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Software\Coder\coder-preentrega-4
+configfile: pytest.ini
+testpaths: tests
+plugins: anyio-4.15.1, langsmith-0.14.4, asyncio-1.2.0, mock-3.15.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 49 items
+
+tests/test_config.py::test_dotenv_carga_y_no_pisa PASSED                 [  2%]
+tests/test_config.py::test_leer_config_toma_el_entorno PASSED            [  4%]
+tests/test_config.py::test_index_name_vacio PASSED                       [  6%]
+tests/test_evaluate.py::test_precision_y_recall_at_k PASSED              [  8%]
+tests/test_evaluate.py::test_golden_set_tiene_cinco_preguntas PASSED     [ 10%]
+tests/test_evaluate.py::test_item_golden_rechaza_campo_extra PASSED      [ 12%]
+tests/test_evaluate.py::test_evaluar_usa_obtener_top_k_y_promedia PASSED [ 14%]
+tests/test_evaluate.py::test_corpus_real_recupera_el_documento_esperado PASSED [ 16%]
+tests/test_ingesta.py::test_splitter_usa_el_chunk_size_de_la_llamada PASSED [ 18%]
+tests/test_ingesta.py::test_chunk_size_fuera_de_rango PASSED             [ 20%]
+tests/test_ingesta.py::test_chunk_overlap_no_puede_alcanzar_al_size PASSED [ 22%]
+tests/test_ingesta.py::test_batch_size_y_k_fuera_de_limite PASSED        [ 24%]
+tests/test_ingesta.py::test_partir_en_lotes_respeta_el_argumento PASSED  [ 26%]
+tests/test_ingesta.py::test_batch_size_llega_al_upsert_y_no_se_clava_en_100 PASSED [ 28%]
+tests/test_ingesta.py::test_metadata_sale_del_nombre_de_archivo PASSED   [ 30%]
+tests/test_ingesta.py::test_carga_los_txt_de_techcorp PASSED             [ 32%]
+tests/test_ingesta.py::test_schema_drift_en_el_documento PASSED          [ 34%]
+tests/test_ingesta.py::test_salida_truncada_no_recorta PASSED            [ 36%]
+tests/test_ingesta.py::test_pydantic_rechaza_campo_extra PASSED          [ 38%]
+tests/test_ingesta.py::test_namespaces_de_entorno_y_de_tenant PASSED     [ 40%]
+tests/test_ingesta.py::test_subida_guarda_texto_y_filtra_por_namespace PASSED [ 42%]
+tests/test_ingesta.py::test_crud_fetch_update_delete_y_delete_all PASSED [ 44%]
+tests/test_ingesta.py::test_401_en_upsert_no_reintenta PASSED            [ 46%]
+tests/test_ingesta.py::test_429_en_upsert_reintenta_y_recupera PASSED    [ 48%]
+tests/test_ingesta.py::test_mismatch_de_vector_no_reintenta PASSED       [ 51%]
+tests/test_ingesta.py::test_error_no_transitorio_no_reintenta PASSED     [ 53%]
+tests/test_ingesta.py::test_timeout_en_upsert_se_agota PASSED            [ 55%]
+tests/test_init_index.py::test_crea_indice_serverless_con_la_dimension_del_modelo PASSED [ 57%]
+tests/test_init_index.py::test_dimension_distinta_llega_al_create PASSED [ 59%]
+tests/test_init_index.py::test_no_recrea_si_existe_y_coincide PASSED     [ 61%]
+tests/test_init_index.py::test_mismatch_de_dimension_no_reintenta PASSED [ 63%]
+tests/test_init_index.py::test_mismatch_de_metrica_en_indice_existente PASSED [ 65%]
+tests/test_init_index.py::test_metrica_euclidean_no_llega_a_crear PASSED [ 67%]
+tests/test_init_index.py::test_dimension_invalida PASSED                 [ 69%]
+tests/test_init_index.py::test_401_en_list_indexes_no_reintenta PASSED   [ 71%]
+tests/test_init_index.py::test_429_reintenta_y_luego_crea PASSED         [ 73%]
+tests/test_init_index.py::test_429_agotado PASSED                        [ 75%]
+tests/test_init_index.py::test_indice_no_ready_es_timeout PASSED         [ 77%]
+tests/test_init_index.py::test_falta_api_key PASSED                      [ 79%]
+tests/test_init_index.py::test_offline_no_llama_a_pinecone PASSED        [ 81%]
+tests/test_init_index.py::test_timeout_de_red_se_clasifica PASSED        [ 83%]
+tests/test_rag.py::test_k_de_la_llamada_llega_al_bm25_y_a_pinecone PASSED [ 85%]
+tests/test_rag.py::test_token_raro_queda_primero_y_el_default_es_top_5 PASSED [ 87%]
+tests/test_rag.py::test_namespace_no_mezcla_al_tenant PASSED             [ 89%]
+tests/test_rag.py::test_consulta_vacia PASSED                            [ 91%]
+tests/test_rag.py::test_weights_llegan_al_ensemble PASSED                [ 93%]
+tests/test_rag.py::test_embeddings_huggingface_recibe_el_modelo PASSED   [ 95%]
+tests/test_rag.py::test_embeddings_offline_usa_la_dimension_pedida PASSED [ 97%]
+tests/test_rag.py::test_huggingface_rechaza_otra_dimension PASSED        [100%]
+
+============================= 49 passed in 7.52s ==============================

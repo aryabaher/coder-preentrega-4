@@ -1,0 +1,22 @@
+[
+  {
+    "pregunta": "¿Cuántos días de vacaciones corresponden a un empleado con 6 años de antigüedad?",
+    "documento_id_esperado": "politica_vacaciones.txt"
+  },
+  {
+    "pregunta": "¿Cuántos días de trabajo remoto por semana tiene el esquema estándar de TechCorp?",
+    "documento_id_esperado": "politica_teletrabajo.txt"
+  },
+  {
+    "pregunta": "¿Cada cuánto deben renovarse las contraseñas corporativas?",
+    "documento_id_esperado": "politica_seguridad_informatica.txt"
+  },
+  {
+    "pregunta": "¿Cuánto dura el proceso de onboarding en TechCorp?",
+    "documento_id_esperado": "onboarding_nuevos_empleados.txt"
+  },
+  {
+    "pregunta": "¿Qué esquema de trabajo tienen las áreas de Soporte Técnico Nivel 1 y Recepción?",
+    "documento_id_esperado": "politica_teletrabajo.txt"
+  }
+]

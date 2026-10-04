@@ -13,6 +13,8 @@ class ConfigEntorno(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     PINECONE_API_KEY: str = ""
+    OPENAI_API_KEY: str = ""
+    ANTHROPIC_API_KEY: str = ""
     INDEX_NAME: str = "techcorp-rag-hibrido"
 
     @field_validator("INDEX_NAME")

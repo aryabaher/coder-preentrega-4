@@ -25,9 +25,13 @@ def test_dotenv_carga_y_no_pisa(tmp_path, monkeypatch):
 
 def test_leer_config_toma_el_entorno(monkeypatch):
     monkeypatch.setenv("PINECONE_API_KEY", "pk")
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
     monkeypatch.setenv("INDEX_NAME", "techcorp-rag-hibrido")
     cfg = leer_config()
     assert cfg.PINECONE_API_KEY == "pk"
+    assert cfg.OPENAI_API_KEY == "sk-test"
+    assert cfg.ANTHROPIC_API_KEY == "sk-ant-test"
     assert cfg.INDEX_NAME == "techcorp-rag-hibrido"
 
 

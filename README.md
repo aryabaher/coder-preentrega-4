@@ -44,8 +44,12 @@ python main.py
 
 ```
 PINECONE_API_KEY=
+OPENAI_API_KEY=
+ANTHROPIC_API_KEY=
 INDEX_NAME=techcorp-rag-hibrido
 ```
+
+`OPENAI_API_KEY` o `ANTHROPIC_API_KEY`: alcanza con completar una. El índice vectorial usa el modelo local de 384; esas claves quedan en el entorno y no se imprimen.
 
 El ejemplo está en `.env.example`.
 
@@ -67,7 +71,7 @@ python evaluate.py --live --k 5
 
 `init_index.py --live` hace esto:
 
-1. Lee `PINECONE_API_KEY` e `INDEX_NAME` (default `techcorp-rag-hibrido`).
+1. Lee `PINECONE_API_KEY`, `OPENAI_API_KEY` o `ANTHROPIC_API_KEY`, e `INDEX_NAME` (default `techcorp-rag-hibrido`).
 2. Arma `indices_existentes = [i["name"] for i in pc.list_indexes()]`.
 3. Si el nombre no está, crea un índice Serverless con `ServerlessSpec(cloud="aws", region="us-east-1")`, `metric="cosine"` y `dimension=EMBEDDING_DIM` (384). Espera a que quede ready.
 4. Si ya existe, compara dimensión y métrica. Un índice de 1536 (otro modelo) o con métrica distinta se aborta. No se reintenta y no se borra: hay que elegir otro `INDEX_NAME` o eliminarlo en la consola de Pinecone.
@@ -100,7 +104,7 @@ El mismo par embedding/índice tiene que usarse al indexar y al consultar. `--li
 
 | Requisito | Cómo se cumple | Evidencia |
 |-----------|----------------|-----------|
-| Variables | `PINECONE_API_KEY` e `INDEX_NAME` | `test_leer_config_toma_el_entorno` |
+| Variables | `PINECONE_API_KEY`, `OPENAI_API_KEY` o `ANTHROPIC_API_KEY`, e `INDEX_NAME` | `test_leer_config_toma_el_entorno` |
 | Índice Serverless | `ServerlessSpec` aws `us-east-1`, cosine, `dimension=EMBEDDING_DIM` (384) | `test_crea_indice_serverless_con_la_dimension_del_modelo` |
 | Mismatch | Índice existente en 1536D o métrica `euclidean` aborta, sin reintento | `test_mismatch_de_dimension_no_reintenta` · `test_mismatch_de_metrica_en_indice_existente` |
 | Dataset | Cuatro `.txt` en `data/`, cargados con `DirectoryLoader` y `TextLoader` | `test_carga_los_txt_de_techcorp` |
@@ -251,7 +255,7 @@ Pedir 1536 con el modelo local: `Mismatch de dimensiones: sentence-transformers/
 
 ## Checklist
 
-- [x] `.env.example` con `PINECONE_API_KEY` e `INDEX_NAME=techcorp-rag-hibrido` (el `.env` real no se versiona)
+- [x] `.env.example` con `PINECONE_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` e `INDEX_NAME=techcorp-rag-hibrido` (el `.env` real no se versiona)
 - [x] `init_index.py` crea el índice Serverless de 384 / cosine si no existe y aborta si no coincide
 - [x] `DirectoryLoader` + `TextLoader` sobre los `.txt` de TechCorp
 - [x] `from_tiktoken_encoder` con `chunk_size` y `chunk_overlap` de la llamada (default 600 / 100)

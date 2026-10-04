@@ -35,6 +35,8 @@ def leer_config() -> ConfigEntorno:
     cargar_dotenv()
     return ConfigEntorno(
         PINECONE_API_KEY=os.getenv("PINECONE_API_KEY", ""),
+        OPENAI_API_KEY=os.getenv("OPENAI_API_KEY", ""),
+        ANTHROPIC_API_KEY=os.getenv("ANTHROPIC_API_KEY", ""),
         INDEX_NAME=os.getenv("INDEX_NAME", "") or "techcorp-rag-hibrido",
     )
 

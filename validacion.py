@@ -28,6 +28,8 @@ ROOT = Path(__file__).resolve().parent
 
 CADENAS = [
     "PINECONE_API_KEY",
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
     "INDEX_NAME",
     "techcorp-rag-hibrido",
     '[i["name"] for i in pc.list_indexes()]',

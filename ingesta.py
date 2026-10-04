@@ -157,9 +157,18 @@ def etiquetar_chunks(chunks: List[Document]) -> List[Document]:
                 "caracteres y no se recorta en silencio."
             )
         nombre_archivo = os.path.basename(chunk.metadata["source"])
+        categoria = nombre_archivo.replace(".txt", "").replace("_", " ")
+        pagina = chunk.metadata.get("pagina", 1)
+        try:
+            pagina = int(pagina)
+        except (TypeError, ValueError) as exc:
+            raise EsquemaMetadatosError(f"pagina inválida en {nombre_archivo}.") from exc
         chunk.metadata.clear()
         chunk.metadata["source"] = nombre_archivo
-        chunk.metadata["categoria"] = nombre_archivo.replace(".txt", "").replace("_", " ")
+        chunk.metadata["fuente"] = nombre_archivo
+        chunk.metadata["pagina"] = pagina
+        chunk.metadata["etiquetas"] = [categoria]
+        chunk.metadata["categoria"] = categoria
         chunk.metadata["chunk_id"] = i
         chunk.metadata["text"] = texto
         chunk.page_content = texto

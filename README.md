@@ -109,7 +109,7 @@ El mismo par embedding/índice tiene que usarse al indexar y al consultar. `--li
 | Mismatch | Índice existente en 768D o métrica `euclidean` aborta, sin reintento | `test_mismatch_de_dimension_no_reintenta` · `test_mismatch_de_metrica_en_indice_existente` |
 | Dataset | Cuatro `.txt` en `data/`, cargados con `DirectoryLoader` y `TextLoader` | `test_carga_los_txt_de_techcorp` |
 | Chunks | `from_tiktoken_encoder(chunk_size=chunk_size, chunk_overlap=chunk_overlap)`. Default 600 / 100, rango 500–800 | `test_splitter_usa_el_chunk_size_de_la_llamada` |
-| Metadata | `metadata["text"]`, `source` (archivo) y `categoria` (nombre legible). `chunk_id` es el índice del fragmento | `test_metadata_sale_del_nombre_de_archivo` |
+| Metadata | `metadata["text"]`, `fuente` y `source` (archivo), `pagina`, `etiquetas` de categoría. `chunk_id` es el índice del fragmento | `test_metadata_sale_del_nombre_de_archivo` |
 | Ingesta | `PineconeVectorStore.from_documents(..., namespace=politicas-internas)`. En offline, `add_documents` por lotes | `test_subida_guarda_texto_y_filtra_por_namespace` |
 | Lotes | `partir_en_lotes(..., chunk_size=batch_size)` y `batch_size` llega a `add_documents`. Default 100 | `test_batch_size_llega_al_upsert_y_no_se_clava_en_100` |
 | Namespaces | El corpus vive en `politicas-internas`. También `ns-dev` / `ns-staging` / `ns-prod` y `ns-cliente-<id>` | `test_namespaces_de_entorno_y_de_tenant` · `test_namespace_no_mezcla_al_tenant` |

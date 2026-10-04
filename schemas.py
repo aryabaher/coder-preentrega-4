@@ -33,8 +33,19 @@ class MetadatosChunk(BaseModel):
 
     text: str = Field(min_length=1)
     source: str = Field(min_length=1)
+    fuente: str = Field(min_length=1)
+    pagina: int = Field(ge=1)
+    etiquetas: List[str] = Field(min_length=1)
     categoria: str = Field(min_length=1)
     chunk_id: int = Field(ge=0)
+
+    @field_validator("etiquetas")
+    @classmethod
+    def etiquetas_no_vacias(cls, valor: List[str]) -> List[str]:
+        limpias = [item.strip() for item in valor if item and str(item).strip()]
+        if not limpias:
+            raise ValueError("etiquetas necesita al menos una categoría.")
+        return limpias
 
 
 class ItemGolden(BaseModel):

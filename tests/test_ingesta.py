@@ -83,6 +83,9 @@ def test_metadata_sale_del_nombre_de_archivo():
     assert len(chunks) == 1
     meta = chunks[0].metadata
     assert meta["source"] == "politica_vacaciones.txt"
+    assert meta["fuente"] == "politica_vacaciones.txt"
+    assert meta["pagina"] == 1
+    assert meta["etiquetas"] == ["politica vacaciones"]
     assert meta["categoria"] == "politica vacaciones"
     assert meta["chunk_id"] == 0
     assert meta["text"] == chunks[0].page_content
@@ -121,6 +124,9 @@ def test_pydantic_rechaza_campo_extra():
             {
                 "text": "hola",
                 "source": "a.txt",
+                "fuente": "a.txt",
+                "pagina": 1,
+                "etiquetas": ["a"],
                 "categoria": "a",
                 "chunk_id": 0,
                 "date_created": "ayer",

@@ -244,7 +244,7 @@ async def subir_chunks(
     if isinstance(dimension, bool) or not isinstance(dimension, int) or dimension <= 0:
         raise DimensionMismatchError(
             f"Mismatch de dimensiones: dimension={dimension} es inválida "
-            "(tiene que coincidir con el embedding, p.ej. 384)."
+            "(tiene que coincidir con el embedding, p.ej. 1536)."
         )
     ids = [str(chunk.metadata["chunk_id"]) for chunk in chunks]
     reintento = {"intentos": intentos, "espera_inicial_s": espera_inicial_s}

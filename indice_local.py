@@ -89,7 +89,7 @@ class IndiceLocal:
         if isinstance(dimension, bool) or not isinstance(dimension, int) or dimension <= 0:
             raise DimensionMismatchError(
                 f"Mismatch de dimensiones: dimension={dimension} es inválida "
-                "(tiene que coincidir con el embedding, p.ej. 384)."
+                "(tiene que coincidir con el embedding, p.ej. 1536)."
             )
         self.dimension = dimension
         self.metric = metric

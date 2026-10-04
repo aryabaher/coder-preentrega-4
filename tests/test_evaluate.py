@@ -56,7 +56,7 @@ def test_evaluar_usa_obtener_top_k_y_promedia():
 
 @pytest.mark.asyncio
 async def test_corpus_real_recupera_el_documento_esperado():
-    paquete = await preparar_sistema(offline=True, k=5, dimension=384)
+    paquete = await preparar_sistema(offline=True, k=5, dimension=1536)
     reporte = evaluar(paquete["rag"], GOLDEN_SET)
     assert reporte["recall@5_promedio"] == 1.0
     assert reporte["precision@5_promedio"] == pytest.approx(0.25)

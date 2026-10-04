@@ -40,9 +40,9 @@ CADENAS = [
     "dimension=dimension",
     "EMBEDDING_DIM",
     "EMBEDDING_MODEL",
-    "sentence-transformers/all-MiniLM-L6-v2",
-    "HuggingFaceEmbeddings",
-    "384",
+    "text-embedding-3-small",
+    "OpenAIEmbeddings",
+    "1536",
     "DirectoryLoader",
     "TextLoader",
     "RecursiveCharacterTextSplitter",
@@ -230,7 +230,7 @@ def main() -> None:
             _ok("no transitorio", "Error de Pinecone: boom" in str(exc) and upsert.n == 1)
 
     asyncio.run(_boom())
-    paquete = asyncio.run(preparar_sistema(offline=True, k=5, dimension=384))
+    paquete = asyncio.run(preparar_sistema(offline=True, k=5, dimension=1536))
     resultado = evaluar(paquete["rag"], cargar_golden())
     imprimir_resumen(resultado)
     _ok("recall", resultado["recall@5_promedio"] == 1.0)

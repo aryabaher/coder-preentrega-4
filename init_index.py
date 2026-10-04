@@ -5,8 +5,8 @@ Contrato de namespaces
 - Tenants: `ns-cliente-<id>`.
 
 Métrica vs embedding
-- sentence-transformers/all-MiniLM-L6-v2 → dimensión 384 y métrica cosine.
-- 1536 es el ancho de otro modelo. Si el índice ya existe con ese ancho, o con otra métrica, se aborta. No se reintenta.
+- OpenAI text-embedding-3-small → dimensión 1536 y métrica cosine.
+- Si el índice ya existe con otro ancho (512, 768, 384) o con otra métrica, se aborta. No se reintenta.
 """
 
 from __future__ import annotations
@@ -122,11 +122,11 @@ async def asegurar_indice(
     if isinstance(dimension, bool) or not isinstance(dimension, int) or dimension <= 0:
         raise DimensionMismatchError(
             f"Mismatch de dimensiones: dimension={dimension} es inválida "
-            "(tiene que coincidir con el embedding, p.ej. 384)."
+            "(tiene que coincidir con el embedding, p.ej. 1536)."
         )
     if metric != "cosine":
         raise MetricaMismatchError(
-            f"Mismatch de métrica: se pidió {metric} y all-MiniLM-L6-v2 usa cosine."
+            f"Mismatch de métrica: se pidió {metric} y text-embedding-3-small usa cosine."
         )
     reintento = {"intentos": intentos, "espera_inicial_s": espera_inicial_s}
     nombres = await con_reintentos(
@@ -170,7 +170,7 @@ async def abrir_indice(
     if offline:
         if metric != "cosine":
             raise MetricaMismatchError(
-                f"Mismatch de métrica: se pidió {metric} y all-MiniLM-L6-v2 usa cosine."
+                f"Mismatch de métrica: se pidió {metric} y text-embedding-3-small usa cosine."
             )
         return IndiceLocal(dimension=dimension, metric=metric)
     config = exigir_pinecone()

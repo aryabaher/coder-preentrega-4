@@ -1,5 +1,7 @@
 $ python validacion.py
 [OK] cadena PINECONE_API_KEY
+[OK] cadena OPENAI_API_KEY
+[OK] cadena ANTHROPIC_API_KEY
 [OK] cadena INDEX_NAME
 [OK] cadena techcorp-rag-hibrido
 [OK] cadena [i["name"] for i in pc.list_indexes()]
@@ -10,9 +12,9 @@ $ python validacion.py
 [OK] cadena dimension=dimension
 [OK] cadena EMBEDDING_DIM
 [OK] cadena EMBEDDING_MODEL
-[OK] cadena sentence-transformers/all-MiniLM-L6-v2
-[OK] cadena HuggingFaceEmbeddings
-[OK] cadena 384
+[OK] cadena text-embedding-3-small
+[OK] cadena OpenAIEmbeddings
+[OK] cadena 1536
 [OK] cadena DirectoryLoader
 [OK] cadena TextLoader
 [OK] cadena RecursiveCharacterTextSplitter
@@ -69,9 +71,9 @@ $ python validacion.py
 [OK] 429
 red: red/timeout: no se pudo hablar con Pinecone. Detalle: Request timed out talking to Pinecone
 [OK] red
-mismatch: Mismatch de dimensiones: dimension=0 es inválida (tiene que coincidir con el embedding, p.ej. 384).
+mismatch: Mismatch de dimensiones: dimension=0 es inválida (tiene que coincidir con el embedding, p.ej. 1536).
 [OK] mismatch dimension
-metrica: Mismatch de métrica: se pidió euclidean y all-MiniLM-L6-v2 usa cosine.
+metrica: Mismatch de métrica: se pidió euclidean y text-embedding-3-small usa cosine.
 [OK] mismatch metrica
 schema: Schema drift: ['date_created'] no pertenece al contrato de metadatos.
 [OK] schema drift

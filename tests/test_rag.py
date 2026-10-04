@@ -113,10 +113,13 @@ def test_weights_llegan_al_ensemble():
     assert list(ensemble.weights) == [0.2, 0.8]
 
 
-def test_embeddings_huggingface_recibe_el_modelo(mocker):
-    mock = mocker.patch("langchain_huggingface.HuggingFaceEmbeddings")
-    get_embeddings(dimension=EMBEDDING_DIM, offline=False)
-    assert mock.call_args.kwargs["model_name"] == EMBEDDING_MODEL
+def test_embeddings_openai_recibe_modelo_y_dimension(mocker):
+    mock = mocker.patch("langchain_openai.OpenAIEmbeddings")
+    get_embeddings(dimension=EMBEDDING_DIM, offline=False, api_key="sk-test")
+    kwargs = mock.call_args.kwargs
+    assert kwargs["model"] == EMBEDDING_MODEL == "text-embedding-3-small"
+    assert kwargs["dimensions"] == 1536
+    assert kwargs["api_key"] == "sk-test"
 
 
 def test_embeddings_offline_usa_la_dimension_pedida():
@@ -124,6 +127,13 @@ def test_embeddings_offline_usa_la_dimension_pedida():
     assert len(emb.embed_query("TechCorp")) == 32
 
 
-def test_huggingface_rechaza_otra_dimension():
-    with pytest.raises(DimensionMismatchError, match="384D"):
-        get_embeddings(dimension=1536, offline=False)
+def test_openai_sin_clave():
+    from errors import ClavePineconeError
+
+    with pytest.raises(ClavePineconeError, match="falta OPENAI_API_KEY"):
+        get_embeddings(dimension=1536, offline=False, api_key="")
+
+
+def test_openai_rechaza_otro_ancho():
+    with pytest.raises(DimensionMismatchError, match="1536D"):
+        get_embeddings(dimension=384, offline=False, api_key="sk-test")

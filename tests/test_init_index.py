@@ -1,4 +1,4 @@
-"""Índice Serverless: alta, dimensión 384, métrica y reintentos. Sin red."""
+"""Índice Serverless: alta, dimensión 1536, métrica y reintentos. Sin red."""
 
 from __future__ import annotations
 
@@ -53,7 +53,7 @@ async def test_crea_indice_serverless_con_la_dimension_del_modelo(mocker):
     )
     kwargs = pc.create_index.call_args.kwargs
     assert kwargs["name"] == "techcorp-rag-hibrido"
-    assert kwargs["dimension"] == 384
+    assert kwargs["dimension"] == 1536
     assert kwargs["metric"] == "cosine"
     assert kwargs["spec"].cloud == "aws"
     assert kwargs["spec"].region == "us-east-1"
@@ -80,26 +80,26 @@ async def test_dimension_distinta_llega_al_create(mocker):
 
 @pytest.mark.asyncio
 async def test_no_recrea_si_existe_y_coincide(mocker):
-    pc = _pc(mocker, nombres=["techcorp-rag-hibrido"], dimension=384, metric="cosine")
-    await asegurar_indice(pc, "techcorp-rag-hibrido", dimension=384, espera_inicial_s=0)
+    pc = _pc(mocker, nombres=["techcorp-rag-hibrido"], dimension=1536, metric="cosine")
+    await asegurar_indice(pc, "techcorp-rag-hibrido", dimension=1536, espera_inicial_s=0)
     pc.create_index.assert_not_called()
     pc.Index.assert_called_once_with("techcorp-rag-hibrido")
 
 
 @pytest.mark.asyncio
 async def test_mismatch_de_dimension_no_reintenta(mocker):
-    pc = _pc(mocker, nombres=["techcorp-rag-hibrido"], dimension=1536, metric="cosine")
-    with pytest.raises(DimensionMismatchError, match="1536D"):
-        await asegurar_indice(pc, "techcorp-rag-hibrido", dimension=384, espera_inicial_s=0)
+    pc = _pc(mocker, nombres=["techcorp-rag-hibrido"], dimension=768, metric="cosine")
+    with pytest.raises(DimensionMismatchError, match="768D"):
+        await asegurar_indice(pc, "techcorp-rag-hibrido", dimension=1536, espera_inicial_s=0)
     pc.create_index.assert_not_called()
     assert pc.describe_index.call_count == 1
 
 
 @pytest.mark.asyncio
 async def test_mismatch_de_metrica_en_indice_existente(mocker):
-    pc = _pc(mocker, nombres=["techcorp-rag-hibrido"], dimension=384, metric="euclidean")
+    pc = _pc(mocker, nombres=["techcorp-rag-hibrido"], dimension=1536, metric="euclidean")
     with pytest.raises(MetricaMismatchError, match="euclidean"):
-        await asegurar_indice(pc, "techcorp-rag-hibrido", dimension=384, espera_inicial_s=0)
+        await asegurar_indice(pc, "techcorp-rag-hibrido", dimension=1536, espera_inicial_s=0)
     pc.create_index.assert_not_called()
 
 
@@ -139,7 +139,7 @@ async def test_429_reintenta_y_luego_crea(mocker):
         ErrorAPI(429, "rate limit / quota exceeded"),
         _Lista([]),
     ]
-    await asegurar_indice(pc, "techcorp-rag-hibrido", dimension=384, espera_inicial_s=0)
+    await asegurar_indice(pc, "techcorp-rag-hibrido", dimension=1536, espera_inicial_s=0)
     assert pc.list_indexes.call_count == 2
     pc.create_index.assert_called_once()
 
@@ -168,9 +168,9 @@ async def test_indice_no_ready_es_timeout(mocker):
 
 @pytest.mark.asyncio
 async def test_falta_api_key(monkeypatch):
-    monkeypatch.delenv("PINECONE_API_KEY", raising=False)
+    monkeypatch.setenv("PINECONE_API_KEY", "")
     with pytest.raises(ClavePineconeError, match="falta PINECONE_API_KEY"):
-        await abrir_indice(offline=False, index_name="techcorp-rag-hibrido", dimension=384)
+        await abrir_indice(offline=False, index_name="techcorp-rag-hibrido", dimension=1536)
 
 
 @pytest.mark.asyncio

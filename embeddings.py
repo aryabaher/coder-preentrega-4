@@ -1,4 +1,4 @@
-"""Embeddings locales: all-MiniLM-L6-v2 (384, cosine) o el sustituto offline del mismo ancho."""
+"""Embeddings de OpenAI text-embedding-3-small (1536, cosine) o el sustituto offline del mismo ancho."""
 
 from __future__ import annotations
 
@@ -7,14 +7,14 @@ from typing import List
 
 from langchain_core.embeddings import Embeddings
 
-from errors import DimensionMismatchError
+from errors import ClavePineconeError, DimensionMismatchError
 
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-EMBEDDING_DIM = 384
+EMBEDDING_MODEL = "text-embedding-3-small"
+EMBEDDING_DIM = 1536
 
 
 class DeterministicEmbeddings(Embeddings):
-    """Bag-of-words hasheado y normalizado. Misma dimensión en cada corrida, sin bajar modelos."""
+    """Bag-of-words hasheado y normalizado. Misma dimensión en cada corrida, sin llamar a OpenAI."""
 
     def __init__(self, dim: int = EMBEDDING_DIM) -> None:
         if isinstance(dim, bool) or not isinstance(dim, int) or dim <= 0:
@@ -42,21 +42,38 @@ class DeterministicEmbeddings(Embeddings):
         return [x / norma for x in vec]
 
 
-def get_embeddings(*, dimension: int = EMBEDDING_DIM, offline: bool = False) -> Embeddings:
-    """El mismo modelo para indexar y para consultar."""
+def get_embeddings(
+    *,
+    dimension: int = EMBEDDING_DIM,
+    offline: bool = False,
+    api_key: str | None = None,
+) -> Embeddings:
+    """El mismo modelo para indexar y para consultar. `dimension` llega al cliente."""
 
     if isinstance(dimension, bool) or not isinstance(dimension, int) or dimension <= 0:
         raise DimensionMismatchError(
             f"Mismatch de dimensiones: dimension={dimension} es inválida "
-            "(tiene que coincidir con el embedding, p.ej. 384)."
+            "(tiene que coincidir con el embedding, p.ej. 1536)."
         )
     if offline:
         return DeterministicEmbeddings(dim=dimension)
     if dimension != EMBEDDING_DIM:
         raise DimensionMismatchError(
-            f"Mismatch de dimensiones: {EMBEDDING_MODEL} es {EMBEDDING_DIM}D "
+            f"Mismatch de dimensiones: {EMBEDDING_MODEL} usa {EMBEDDING_DIM}D "
             f"y se pidió {dimension}D."
         )
-    from langchain_huggingface import HuggingFaceEmbeddings
+    if api_key is None:
+        from config import leer_config
 
-    return HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
+        api_key = leer_config().OPENAI_API_KEY
+    if not (api_key or "").strip():
+        raise ClavePineconeError(
+            "401/key: falta OPENAI_API_KEY en las variables de entorno."
+        )
+    from langchain_openai import OpenAIEmbeddings
+
+    return OpenAIEmbeddings(
+        model=EMBEDDING_MODEL,
+        api_key=api_key,
+        dimensions=dimension,
+    )

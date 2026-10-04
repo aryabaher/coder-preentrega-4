@@ -1,13 +1,13 @@
 $ python -m pytest -o addopts= -v -ra
 ============================= test session starts =============================
-platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0 -- C:\Software\Coder\coder-preentrega-4\.venv\Scripts\python.exe
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0 -- c:\Software\Coder\coder-preentrega-4\.venv\Scripts\python.exe
 cachedir: .pytest_cache
-rootdir: C:\Software\Coder\coder-preentrega-4
+rootdir: c:\Software\Coder\coder-preentrega-4
 configfile: pytest.ini
 testpaths: tests
 plugins: anyio-4.15.1, langsmith-0.14.4, asyncio-1.2.0, mock-3.15.1
 asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collecting ... collected 49 items
+collecting ... collected 50 items
 
 tests/test_config.py::test_dotenv_carga_y_no_pisa PASSED                 [  2%]
 tests/test_config.py::test_leer_config_toma_el_entorno PASSED            [  4%]
@@ -33,30 +33,31 @@ tests/test_ingesta.py::test_subida_guarda_texto_y_filtra_por_namespace PASSED [ 
 tests/test_ingesta.py::test_crud_fetch_update_delete_y_delete_all PASSED [ 44%]
 tests/test_ingesta.py::test_401_en_upsert_no_reintenta PASSED            [ 46%]
 tests/test_ingesta.py::test_429_en_upsert_reintenta_y_recupera PASSED    [ 48%]
-tests/test_ingesta.py::test_mismatch_de_vector_no_reintenta PASSED       [ 51%]
-tests/test_ingesta.py::test_error_no_transitorio_no_reintenta PASSED     [ 53%]
-tests/test_ingesta.py::test_timeout_en_upsert_se_agota PASSED            [ 55%]
-tests/test_init_index.py::test_crea_indice_serverless_con_la_dimension_del_modelo PASSED [ 57%]
-tests/test_init_index.py::test_dimension_distinta_llega_al_create PASSED [ 59%]
-tests/test_init_index.py::test_no_recrea_si_existe_y_coincide PASSED     [ 61%]
-tests/test_init_index.py::test_mismatch_de_dimension_no_reintenta PASSED [ 63%]
-tests/test_init_index.py::test_mismatch_de_metrica_en_indice_existente PASSED [ 65%]
-tests/test_init_index.py::test_metrica_euclidean_no_llega_a_crear PASSED [ 67%]
-tests/test_init_index.py::test_dimension_invalida PASSED                 [ 69%]
-tests/test_init_index.py::test_401_en_list_indexes_no_reintenta PASSED   [ 71%]
-tests/test_init_index.py::test_429_reintenta_y_luego_crea PASSED         [ 73%]
-tests/test_init_index.py::test_429_agotado PASSED                        [ 75%]
-tests/test_init_index.py::test_indice_no_ready_es_timeout PASSED         [ 77%]
-tests/test_init_index.py::test_falta_api_key PASSED                      [ 79%]
-tests/test_init_index.py::test_offline_no_llama_a_pinecone PASSED        [ 81%]
-tests/test_init_index.py::test_timeout_de_red_se_clasifica PASSED        [ 83%]
-tests/test_rag.py::test_k_de_la_llamada_llega_al_bm25_y_a_pinecone PASSED [ 85%]
-tests/test_rag.py::test_token_raro_queda_primero_y_el_default_es_top_5 PASSED [ 87%]
-tests/test_rag.py::test_namespace_no_mezcla_al_tenant PASSED             [ 89%]
-tests/test_rag.py::test_consulta_vacia PASSED                            [ 91%]
-tests/test_rag.py::test_weights_llegan_al_ensemble PASSED                [ 93%]
-tests/test_rag.py::test_embeddings_huggingface_recibe_el_modelo PASSED   [ 95%]
-tests/test_rag.py::test_embeddings_offline_usa_la_dimension_pedida PASSED [ 97%]
-tests/test_rag.py::test_huggingface_rechaza_otra_dimension PASSED        [100%]
+tests/test_ingesta.py::test_mismatch_de_vector_no_reintenta PASSED       [ 50%]
+tests/test_ingesta.py::test_error_no_transitorio_no_reintenta PASSED     [ 52%]
+tests/test_ingesta.py::test_timeout_en_upsert_se_agota PASSED            [ 54%]
+tests/test_init_index.py::test_crea_indice_serverless_con_la_dimension_del_modelo PASSED [ 56%]
+tests/test_init_index.py::test_dimension_distinta_llega_al_create PASSED [ 58%]
+tests/test_init_index.py::test_no_recrea_si_existe_y_coincide PASSED     [ 60%]
+tests/test_init_index.py::test_mismatch_de_dimension_no_reintenta PASSED [ 62%]
+tests/test_init_index.py::test_mismatch_de_metrica_en_indice_existente PASSED [ 64%]
+tests/test_init_index.py::test_metrica_euclidean_no_llega_a_crear PASSED [ 66%]
+tests/test_init_index.py::test_dimension_invalida PASSED                 [ 68%]
+tests/test_init_index.py::test_401_en_list_indexes_no_reintenta PASSED   [ 70%]
+tests/test_init_index.py::test_429_reintenta_y_luego_crea PASSED         [ 72%]
+tests/test_init_index.py::test_429_agotado PASSED                        [ 74%]
+tests/test_init_index.py::test_indice_no_ready_es_timeout PASSED         [ 76%]
+tests/test_init_index.py::test_falta_api_key PASSED                      [ 78%]
+tests/test_init_index.py::test_offline_no_llama_a_pinecone PASSED        [ 80%]
+tests/test_init_index.py::test_timeout_de_red_se_clasifica PASSED        [ 82%]
+tests/test_rag.py::test_k_de_la_llamada_llega_al_bm25_y_a_pinecone PASSED [ 84%]
+tests/test_rag.py::test_token_raro_queda_primero_y_el_default_es_top_5 PASSED [ 86%]
+tests/test_rag.py::test_namespace_no_mezcla_al_tenant PASSED             [ 88%]
+tests/test_rag.py::test_consulta_vacia PASSED                            [ 90%]
+tests/test_rag.py::test_weights_llegan_al_ensemble PASSED                [ 92%]
+tests/test_rag.py::test_embeddings_openai_recibe_modelo_y_dimension PASSED [ 94%]
+tests/test_rag.py::test_embeddings_offline_usa_la_dimension_pedida PASSED [ 96%]
+tests/test_rag.py::test_openai_sin_clave PASSED                          [ 98%]
+tests/test_rag.py::test_openai_rechaza_otro_ancho PASSED                 [100%]
 
-============================= 49 passed in 7.52s ==============================
+============================= 50 passed in 5.96s ==============================

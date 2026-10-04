@@ -2,7 +2,7 @@
 
 Servicio en Python que ingesta las políticas internas de TechCorp en un índice Pinecone Serverless, recupera con un `EnsembleRetriever` (BM25 + vectores) y mide Precision@5 y Recall@5 sobre 5 preguntas.
 
-El embedding es `sentence-transformers/all-MiniLM-L6-v2` (384 dimensiones, cosine). Sin API key el mismo flujo corre en memoria, con un embedding determinista del mismo ancho. Con `--live` crea el índice y usa el modelo local de verdad.
+El embedding es OpenAI `text-embedding-3-small` (1536 dimensiones, cosine). Sin API key el mismo flujo corre en memoria, con un embedding determinista del mismo ancho. Con `--live` crea el índice Serverless en esa dimensión y embeddea con OpenAI.
 
 ## Quick path
 
@@ -49,14 +49,14 @@ ANTHROPIC_API_KEY=
 INDEX_NAME=techcorp-rag-hibrido
 ```
 
-`OPENAI_API_KEY` o `ANTHROPIC_API_KEY`: alcanza con completar una. El índice vectorial usa el modelo local de 384; esas claves quedan en el entorno y no se imprimen.
+Para embeddear hace falta `OPENAI_API_KEY` (`text-embedding-3-small`, índice de 1536). `ANTHROPIC_API_KEY` es la alternativa de proveedor que pide la letra; no cambia el ancho del índice. Ninguna clave se imprime.
 
 El ejemplo está en `.env.example`.
 
 **Windows (PowerShell):**
 
 ```powershell
-python init_index.py --live --dimension 384
+python init_index.py --live --dimension 1536
 python main.py --live --chunk-size 600 --chunk-overlap 100 --batch-size 100 --k 5
 python evaluate.py --live --k 5
 ```
@@ -64,7 +64,7 @@ python evaluate.py --live --k 5
 **Linux/macOS (bash/zsh):**
 
 ```bash
-python init_index.py --live --dimension 384
+python init_index.py --live --dimension 1536
 python main.py --live --chunk-size 600 --chunk-overlap 100 --batch-size 100 --k 5
 python evaluate.py --live --k 5
 ```
@@ -73,12 +73,12 @@ python evaluate.py --live --k 5
 
 1. Lee `PINECONE_API_KEY`, `OPENAI_API_KEY` o `ANTHROPIC_API_KEY`, e `INDEX_NAME` (default `techcorp-rag-hibrido`).
 2. Arma `indices_existentes = [i["name"] for i in pc.list_indexes()]`.
-3. Si el nombre no está, crea un índice Serverless con `ServerlessSpec(cloud="aws", region="us-east-1")`, `metric="cosine"` y `dimension=EMBEDDING_DIM` (384). Espera a que quede ready.
-4. Si ya existe, compara dimensión y métrica. Un índice de 1536 (otro modelo) o con métrica distinta se aborta. No se reintenta y no se borra: hay que elegir otro `INDEX_NAME` o eliminarlo en la consola de Pinecone.
+3. Si el nombre no está, crea un índice Serverless con `ServerlessSpec(cloud="aws", region="us-east-1")`, `metric="cosine"` y `dimension=1536` (`text-embedding-3-small`). Espera a que quede ready.
+4. Si ya existe, compara dimensión y métrica. Un índice de 512 o 768, o con métrica distinta, se aborta. No se reintenta y no se borra: hay que elegir otro `INDEX_NAME` o eliminarlo en la consola de Pinecone.
 
 `main.py --live` carga los `.txt` de `data/` con `DirectoryLoader` + `TextLoader`, los parte con `RecursiveCharacterTextSplitter.from_tiktoken_encoder` (default `chunk_size=600`, `chunk_overlap=100`) y los sube con `PineconeVectorStore.from_documents` al namespace `politicas-internas`. El texto queda en `metadata["text"]`. La fuente es el nombre del archivo y la categoría es ese nombre sin `.txt` ni guiones bajos.
 
-El mismo par embedding/índice tiene que usarse al indexar y al consultar. `--live` en los dos comandos usa el modelo de 384. El modo offline no toca Pinecone.
+El mismo par embedding/índice tiene que usarse al indexar y al consultar. `--live` en los dos comandos usa `text-embedding-3-small` (1536). El modo offline no toca Pinecone ni OpenAI.
 
 `--chunk-size`, `--chunk-overlap`, `--batch-size`, `--k` y `--dimension` llegan al splitter, al `upsert` y al retriever. El default no los pisa.
 
@@ -94,7 +94,7 @@ El mismo par embedding/índice tiene que usarse al indexar y al consultar. `--li
 | Golden set `{"pregunta", "documento_id_esperado"}` | `evaluate.py` y `data/golden_set.json` |
 | Políticas de TechCorp | `data/*.txt` |
 | Errores 401 / 429 / red / mismatch / schema / truncado | `errors.py`, `reintentos.py` |
-| `HuggingFaceEmbeddings` o el sustituto offline de 384 | `embeddings.py` |
+| `OpenAIEmbeddings` `text-embedding-3-small` (1536) o el sustituto offline | `embeddings.py` |
 | Demo | `main.py` |
 | Chequeo offline | `validacion.py` |
 | Tests | `tests/` |
@@ -105,8 +105,8 @@ El mismo par embedding/índice tiene que usarse al indexar y al consultar. `--li
 | Requisito | Cómo se cumple | Evidencia |
 |-----------|----------------|-----------|
 | Variables | `PINECONE_API_KEY`, `OPENAI_API_KEY` o `ANTHROPIC_API_KEY`, e `INDEX_NAME` | `test_leer_config_toma_el_entorno` |
-| Índice Serverless | `ServerlessSpec` aws `us-east-1`, cosine, `dimension=EMBEDDING_DIM` (384) | `test_crea_indice_serverless_con_la_dimension_del_modelo` |
-| Mismatch | Índice existente en 1536D o métrica `euclidean` aborta, sin reintento | `test_mismatch_de_dimension_no_reintenta` · `test_mismatch_de_metrica_en_indice_existente` |
+| Índice Serverless | `ServerlessSpec` aws `us-east-1`, cosine, dimensión 1536 | `test_crea_indice_serverless_con_la_dimension_del_modelo` |
+| Mismatch | Índice existente en 768D o métrica `euclidean` aborta, sin reintento | `test_mismatch_de_dimension_no_reintenta` · `test_mismatch_de_metrica_en_indice_existente` |
 | Dataset | Cuatro `.txt` en `data/`, cargados con `DirectoryLoader` y `TextLoader` | `test_carga_los_txt_de_techcorp` |
 | Chunks | `from_tiktoken_encoder(chunk_size=chunk_size, chunk_overlap=chunk_overlap)`. Default 600 / 100, rango 500–800 | `test_splitter_usa_el_chunk_size_de_la_llamada` |
 | Metadata | `metadata["text"]`, `source` (archivo) y `categoria` (nombre legible). `chunk_id` es el índice del fragmento | `test_metadata_sale_del_nombre_de_archivo` |
@@ -125,11 +125,11 @@ El mismo par embedding/índice tiene que usarse al indexar y al consultar. `--li
 - **Entornos y tenants, aparte:** `ns-dev`, `ns-staging`, `ns-prod` y `ns-cliente-<id>`. Un upsert no mezcla dos espacios. Query, fetch, update y delete llevan `namespace=`.
 - **Metadata:** `text` (el fragmento), `source` (por ejemplo `politica_vacaciones.txt`), `categoria` (por ejemplo `politica vacaciones`), `chunk_id` (entero).
 - **Filtro:** `{"source": {"$eq": "politica_vacaciones.txt"}}` junto con `include_metadata=True`.
-- **Métrica:** cosine. El modelo local es de 384. Un índice de 1536 no sirve para este embedding.
+- **Métrica:** cosine. `text-embedding-3-small` es de 1536. Un índice de 512 o 768 no sirve para este embedding.
 
-## Por qué 384, cosine y búsqueda híbrida
+## Por qué 1536, cosine y búsqueda híbrida
 
-`all-MiniLM-L6-v2` se compara por coseno y devuelve 384 números. Fijar 1536 a mano armaría un índice de otro modelo: por eso `EMBEDDING_DIM` es el mismo valor al crear el índice y al embeddear. El corte default de 600 tokens (piso 500, techo 800) y el overlap de 100 llegan tal cual a `from_tiktoken_encoder`. BM25 sostiene términos literales (`2FA`, `Soporte Técnico Nivel 1`); el vector sostiene el parafraseo. El `EnsembleRetriever` los junta con pesos iguales.
+`text-embedding-3-small` se compara por coseno y devuelve 1536 números. Ese ancho es el que se pasa a `create_index` y a `OpenAIEmbeddings(dimensions=1536)`. El corte default de 600 tokens (piso 500, techo 800) y el overlap de 100 llegan tal cual a `from_tiktoken_encoder`. BM25 sostiene términos literales (`2FA`, `Soporte Técnico Nivel 1`); el vector sostiene el parafraseo. El `EnsembleRetriever` los junta con pesos iguales.
 
 ## Evaluación
 
@@ -185,21 +185,21 @@ Si el índice no pasa a ready: `red/timeout: el índice techcorp-rag-hibrido no 
 
 ### Mismatch de dimensiones
 
-**Mensaje:** `Mismatch de dimensiones: el índice techcorp-rag-hibrido es 1536D y se pidió 384D.`
+**Mensaje:** `Mismatch de dimensiones: el índice techcorp-rag-hibrido es 768D y se pidió 1536D.`
 
 **Cómo reproducirlo:** el índice ya existe con el ancho de otro modelo. No se reintenta y no se llama a `create_index`.
 
 **Test:** `tests/test_init_index.py::test_mismatch_de_dimension_no_reintenta`
 
-`dimension=0`: `Mismatch de dimensiones: dimension=0 es inválida (tiene que coincidir con el embedding, p.ej. 384).` (`test_dimension_invalida`).
+`dimension=0`: `Mismatch de dimensiones: dimension=0 es inválida (tiene que coincidir con el embedding, p.ej. 1536).` (`test_dimension_invalida`).
 
 Vector de otro largo: `Mismatch de dimensiones: el vector es 2D y el índice es 8D.` (`test_mismatch_de_vector_no_reintenta`).
 
-Pedir 1536 con el modelo local: `Mismatch de dimensiones: sentence-transformers/all-MiniLM-L6-v2 es 384D y se pidió 1536D.` (`test_huggingface_rechaza_otra_dimension`).
+Pedir otro ancho con este modelo: `Mismatch de dimensiones: text-embedding-3-small usa 1536D y se pidió 384D.` (`test_openai_rechaza_otro_ancho`). Sin `OPENAI_API_KEY`: `401/key: falta OPENAI_API_KEY en las variables de entorno.` (`test_openai_sin_clave`).
 
 ### Mismatch de métrica
 
-**Mensaje:** `Mismatch de métrica: se pidió euclidean y all-MiniLM-L6-v2 usa cosine.`
+**Mensaje:** `Mismatch de métrica: se pidió euclidean y text-embedding-3-small usa cosine.`
 
 **Cómo reproducirlo:** pedir `metric="euclidean"`, o apuntar a un índice que ya es `euclidean`.
 
@@ -256,7 +256,7 @@ Pedir 1536 con el modelo local: `Mismatch de dimensiones: sentence-transformers/
 ## Checklist
 
 - [x] `.env.example` con `PINECONE_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` e `INDEX_NAME=techcorp-rag-hibrido` (el `.env` real no se versiona)
-- [x] `init_index.py` crea el índice Serverless de 384 / cosine si no existe y aborta si no coincide
+- [x] `init_index.py` crea el índice Serverless de 1536 / cosine (`text-embedding-3-small`) si no existe y aborta si no coincide
 - [x] `DirectoryLoader` + `TextLoader` sobre los `.txt` de TechCorp
 - [x] `from_tiktoken_encoder` con `chunk_size` y `chunk_overlap` de la llamada (default 600 / 100)
 - [x] Texto original en `metadata["text"]`, más `source`, `categoria` y `chunk_id`

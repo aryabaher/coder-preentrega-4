@@ -1,5 +1,5 @@
 $ python main.py
-tiempo_ingesta_s=0.186
+tiempo_ingesta_s=0.130
 chunks=4 namespace=politicas-internas
 1. [politica_vacaciones.txt] Política de Vacaciones - TechCorp
 

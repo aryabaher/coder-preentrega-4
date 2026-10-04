@@ -92,15 +92,16 @@ def test_metadata_sale_del_nombre_de_archivo():
     MetadatosChunk.model_validate(meta)
 
 
-def test_carga_los_txt_de_techcorp():
+def test_carga_txt_markdown_json_y_pdf():
     docs = cargar_documentos()
     nombres = {doc.metadata["source"].replace("\\", "/").split("/")[-1] for doc in docs}
-    assert nombres == {
+    assert {
         "politica_vacaciones.txt",
-        "politica_teletrabajo.txt",
-        "politica_seguridad_informatica.txt",
-        "onboarding_nuevos_empleados.txt",
-    }
+        "politica_viajes.md",
+        "politica_equipamiento.json",
+        "politica_respaldos.pdf",
+    } <= nombres
+    assert "golden_set.json" not in nombres
 
 
 def test_schema_drift_en_el_documento():

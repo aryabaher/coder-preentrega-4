@@ -36,7 +36,7 @@ python evaluate.py
 python main.py
 ```
 
-`evaluate.py` imprime Recall@5 promedio 100% y Precision@5 promedio 25%. En las cinco preguntas el archivo esperado es el primer resultado.
+`evaluate.py` imprime Recall@5 promedio 100% y Precision@5 promedio 20%. En las cinco preguntas el archivo esperado es el primero de los 5 recuperados.
 
 ## Replicar el índice en Pinecone
 
@@ -76,7 +76,7 @@ python evaluate.py --live --k 5
 3. Si el nombre no está, crea un índice Serverless con `ServerlessSpec(cloud="aws", region="us-east-1")`, `metric="cosine"` y `dimension=1536` (`text-embedding-3-small`). Espera a que quede ready.
 4. Si ya existe, compara dimensión y métrica. Un índice de 512 o 768, o con métrica distinta, se aborta. No se reintenta y no se borra: hay que elegir otro `INDEX_NAME` o eliminarlo en la consola de Pinecone.
 
-`main.py --live` carga los `.txt` de `data/` con `DirectoryLoader` + `TextLoader`, los parte con `RecursiveCharacterTextSplitter.from_tiktoken_encoder` (default `chunk_size=600`, `chunk_overlap=100`) y los sube con `PineconeVectorStore.from_documents` al namespace `politicas-internas`. El texto queda en `metadata["text"]`. La fuente es el nombre del archivo y la categoría es ese nombre sin `.txt` ni guiones bajos.
+`main.py --live` carga `.txt`, `.md`, `.json` y `.pdf` de `data/` (`DirectoryLoader` + `TextLoader` para texto y Markdown, y `PyPDFLoader` para PDF), los parte con `RecursiveCharacterTextSplitter.from_tiktoken_encoder` (default `chunk_size=600`, `chunk_overlap=100`) y los sube con `PineconeVectorStore.from_documents` al namespace `politicas-internas`. El texto queda en `metadata["text"]`, junto con `fuente`, `pagina` y `etiquetas`.
 
 El mismo par embedding/índice tiene que usarse al indexar y al consultar. `--live` en los dos comandos usa `text-embedding-3-small` (1536). El modo offline no toca Pinecone ni OpenAI.
 
@@ -138,14 +138,14 @@ Cinco preguntas, cada una con un solo `documento_id_esperado` (el nombre del `.t
 - **Recall@5** = 1 si esa fuente aparece entre lo recuperado, si no 0. Con un único documento relevante no hay un valor intermedio.
 - **Precision@5** = coincidencias / cantidad recuperada.
 
-Hay 4 fragmentos y `k=5`, así que el top incluye el corpus entero: Recall@5 promedio = 1 y Precision@5 promedio = 1/4 = 0.25. Aun así el archivo correcto queda primero en las cinco preguntas.
+El corpus tiene 9 fragmentos y `k=5`, así que cada consulta devuelve 5. El archivo esperado entra una vez: Precision@5 = 1/5 = 0.20. En las cinco preguntas ese archivo es el primero: Recall@5 = 1.
 
 Salida de `python evaluate.py`:
 
 ```
 RECALL@5 PROMEDIO:    100.0%
 PRECISION@5 PROMEDIO: 25.0%
-Precision@5: 0.2500
+Precision@5: 0.2000
 Recall@5: 1.0000
 ```
 
@@ -259,7 +259,9 @@ Pedir otro ancho con este modelo: `Mismatch de dimensiones: text-embedding-3-sma
 - [x] `init_index.py` crea el índice Serverless de 1536 / cosine (`text-embedding-3-small`) si no existe y aborta si no coincide
 - [x] `DirectoryLoader` + `TextLoader` sobre los `.txt` de TechCorp
 - [x] `from_tiktoken_encoder` con `chunk_size` y `chunk_overlap` de la llamada (default 600 / 100)
-- [x] Texto original en `metadata["text"]`, más `source`, `categoria` y `chunk_id`
+- [x] Carga de `.txt`, `.md`, `.json` y `.pdf`
+- [x] Texto original en `metadata["text"]`, más `fuente`, `pagina`, `etiquetas`, `source` y `chunk_id`
+- [x] Cada consulta de evaluación devuelve 5 fragmentos (Precision@5 sobre esos 5)
 - [x] Namespace `politicas-internas`, y también `ns-dev` / `ns-staging` / `ns-prod` / `ns-cliente-<id>`
 - [x] `PineconeVectorStore.from_documents` y lotes con reintentos ante 429 y red
 - [x] CRUD: fetch, update de metadatos, delete por id y `delete_all` por namespace

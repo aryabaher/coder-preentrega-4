@@ -24,7 +24,7 @@ tests/test_ingesta.py::test_batch_size_y_k_fuera_de_limite PASSED        [ 24%]
 tests/test_ingesta.py::test_partir_en_lotes_respeta_el_argumento PASSED  [ 26%]
 tests/test_ingesta.py::test_batch_size_llega_al_upsert_y_no_se_clava_en_100 PASSED [ 28%]
 tests/test_ingesta.py::test_metadata_sale_del_nombre_de_archivo PASSED   [ 30%]
-tests/test_ingesta.py::test_carga_los_txt_de_techcorp PASSED             [ 32%]
+tests/test_ingesta.py::test_carga_txt_markdown_json_y_pdf PASSED         [ 32%]
 tests/test_ingesta.py::test_schema_drift_en_el_documento PASSED          [ 34%]
 tests/test_ingesta.py::test_salida_truncada_no_recorta PASSED            [ 36%]
 tests/test_ingesta.py::test_pydantic_rechaza_campo_extra PASSED          [ 38%]
@@ -60,4 +60,4 @@ tests/test_rag.py::test_embeddings_offline_usa_la_dimension_pedida PASSED [ 96%]
 tests/test_rag.py::test_openai_sin_clave PASSED                          [ 98%]
 tests/test_rag.py::test_openai_rechaza_otro_ancho PASSED                 [100%]
 
-============================= 50 passed in 5.96s ==============================
+============================= 50 passed in 6.04s ==============================

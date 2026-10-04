@@ -6,6 +6,7 @@ La categoría sale del nombre del archivo. El índice de chunk es chunk_id.
 
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 from typing import Any, Iterable, Iterator, List, Optional
@@ -111,20 +112,67 @@ def construir_splitter(
     )
 
 
+_JSON_IGNORADOS = frozenset({"golden_set.json"})
+
+
+def _cargar_json(ruta: Path) -> List[Document]:
+    crudo = json.loads(ruta.read_text(encoding="utf-8"))
+    items = crudo if isinstance(crudo, list) else [crudo]
+    documentos: List[Document] = []
+    for item in items:
+        if not isinstance(item, dict) or "texto" not in item:
+            raise EsquemaMetadatosError(f"{ruta.name} no trae texto.")
+        etiquetas = item.get("etiquetas") or []
+        if isinstance(etiquetas, str):
+            etiquetas = [parte.strip() for parte in etiquetas.split(",") if parte.strip()]
+        documentos.append(
+            Document(
+                page_content=str(item["texto"]),
+                metadata={
+                    "source": str(ruta),
+                    "pagina": int(item.get("pagina", 1)),
+                    "etiquetas": [str(etiqueta) for etiqueta in etiquetas],
+                },
+            )
+        )
+    return documentos
+
+
+def _cargar_pdf(ruta: Path) -> List[Document]:
+    from langchain_community.document_loaders import PyPDFLoader
+
+    paginas = PyPDFLoader(str(ruta)).load()
+    for doc in paginas:
+        if "pagina" not in doc.metadata and "page" in doc.metadata:
+            doc.metadata["pagina"] = int(doc.metadata["page"]) + 1
+    return paginas
+
+
 def cargar_documentos(data_dir: str | Path = DATA_DIR) -> List[Document]:
+    """Lee .txt y .md con DirectoryLoader, más JSON y PDF de la misma carpeta."""
+
     carpeta = Path(data_dir)
     if not carpeta.is_dir():
         raise IngestaError(f"No existe la carpeta de documentos: {carpeta}")
-    loader = DirectoryLoader(
-        str(carpeta),
-        glob="*.txt",
-        loader_cls=TextLoader,
-        loader_kwargs={"encoding": "utf-8"},
-    )
-    documentos_crudos = loader.load()
-    if not documentos_crudos:
-        raise IngestaError(f"No hay .txt en {carpeta}.")
-    return documentos_crudos
+    documentos: List[Document] = []
+    for glob in ("*.txt", "*.md"):
+        loader = DirectoryLoader(
+            str(carpeta),
+            glob=glob,
+            loader_cls=TextLoader,
+            loader_kwargs={"encoding": "utf-8"},
+        )
+        documentos.extend(loader.load())
+    for ruta in sorted(carpeta.iterdir()):
+        if not ruta.is_file() or ruta.name in _JSON_IGNORADOS:
+            continue
+        if ruta.suffix.lower() == ".json":
+            documentos.extend(_cargar_json(ruta))
+        elif ruta.suffix.lower() == ".pdf":
+            documentos.extend(_cargar_pdf(ruta))
+    if not documentos:
+        raise IngestaError(f"No hay documentos en {carpeta}.")
+    return documentos
 
 
 def fragmentar(
@@ -157,7 +205,14 @@ def etiquetar_chunks(chunks: List[Document]) -> List[Document]:
                 "caracteres y no se recorta en silencio."
             )
         nombre_archivo = os.path.basename(chunk.metadata["source"])
-        categoria = nombre_archivo.replace(".txt", "").replace("_", " ")
+        categoria = (
+            nombre_archivo.replace(".txt", "")
+            .replace(".md", "")
+            .replace(".json", "")
+            .replace(".pdf", "")
+            .replace("_", " ")
+        )
+        etiquetas_previas = chunk.metadata.get("etiquetas") or []
         pagina = chunk.metadata.get("pagina", 1)
         try:
             pagina = int(pagina)
@@ -167,7 +222,7 @@ def etiquetar_chunks(chunks: List[Document]) -> List[Document]:
         chunk.metadata["source"] = nombre_archivo
         chunk.metadata["fuente"] = nombre_archivo
         chunk.metadata["pagina"] = pagina
-        chunk.metadata["etiquetas"] = [categoria]
+        chunk.metadata["etiquetas"] = [str(item) for item in etiquetas_previas] or [categoria]
         chunk.metadata["categoria"] = categoria
         chunk.metadata["chunk_id"] = i
         chunk.metadata["text"] = texto

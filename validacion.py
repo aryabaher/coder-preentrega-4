@@ -234,7 +234,8 @@ def main() -> None:
     resultado = evaluar(paquete["rag"], cargar_golden())
     imprimir_resumen(resultado)
     _ok("recall", resultado["recall@5_promedio"] == 1.0)
-    _ok("precision", abs(resultado["precision@5_promedio"] - 0.25) < 1e-9)
+    _ok("top5", all(len(fila["recuperados"]) == 5 for fila in resultado["detalle"]))
+    _ok("precision", abs(resultado["precision@5_promedio"] - 0.2) < 1e-9)
     print("validacion=OK")
 
 

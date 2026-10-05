@@ -92,7 +92,7 @@ El mismo par embedding/índice tiene que usarse al indexar y al consultar. `--li
 | `BM25Retriever` + `PineconeVectorStore` en un `EnsembleRetriever` | `rag_system.py` |
 | `evaluar` (Recall@5, Precision@5 y los promedios) | `evaluate.py` |
 | Golden set `{"pregunta", "documento_id_esperado"}` | `evaluate.py` y `data/golden_set.json` |
-| Políticas de TechCorp | `data/*.txt` |
+| Políticas de TechCorp (`.txt`, `.md`, `.json`, `.pdf`) | `data/` |
 | Errores 401 / 429 / red / mismatch / schema / truncado | `errors.py`, `reintentos.py` |
 | `OpenAIEmbeddings` `text-embedding-3-small` (1536) o el sustituto offline | `embeddings.py` |
 | Demo | `main.py` |
@@ -100,28 +100,39 @@ El mismo par embedding/índice tiene que usarse al indexar y al consultar. `--li
 | Tests | `tests/` |
 | `pytest.ini` | `testpaths = tests` · `asyncio_mode = auto` · `addopts = -ra -q` |
 
-## Cómo se cubre la consigna
+## Cómo se cubre cada criterio
 
-| Requisito | Cómo se cumple | Evidencia |
-|-----------|----------------|-----------|
-| Variables | `PINECONE_API_KEY`, `OPENAI_API_KEY` o `ANTHROPIC_API_KEY`, e `INDEX_NAME` | `test_leer_config_toma_el_entorno` |
-| Índice Serverless | `ServerlessSpec` aws `us-east-1`, cosine, dimensión 1536 | `test_crea_indice_serverless_con_la_dimension_del_modelo` |
-| Mismatch | Índice existente en 768D o métrica `euclidean` aborta, sin reintento | `test_mismatch_de_dimension_no_reintenta` · `test_mismatch_de_metrica_en_indice_existente` |
-| Dataset | Cuatro `.txt` en `data/`, cargados con `DirectoryLoader` y `TextLoader` | `test_carga_los_txt_de_techcorp` |
-| Chunks | `from_tiktoken_encoder(chunk_size=chunk_size, chunk_overlap=chunk_overlap)`. Default 600 / 100, rango 500–800 | `test_splitter_usa_el_chunk_size_de_la_llamada` |
-| Metadata | `metadata["text"]`, `fuente` y `source` (archivo), `pagina`, `etiquetas` de categoría. `chunk_id` es el índice del fragmento | `test_metadata_sale_del_nombre_de_archivo` |
-| Ingesta | `PineconeVectorStore.from_documents(..., namespace=politicas-internas)`. En offline, `add_documents` por lotes | `test_subida_guarda_texto_y_filtra_por_namespace` |
-| Lotes | `partir_en_lotes(..., chunk_size=batch_size)` y `batch_size` llega a `add_documents`. Default 100 | `test_batch_size_llega_al_upsert_y_no_se_clava_en_100` |
-| Namespaces | El corpus vive en `politicas-internas`. También `ns-dev` / `ns-staging` / `ns-prod` y `ns-cliente-<id>` | `test_namespaces_de_entorno_y_de_tenant` · `test_namespace_no_mezcla_al_tenant` |
-| Reintentos | 429 y red/timeout: 3 intentos, 0.5s → 1s → 2s. 401 y mismatch: un solo intento | `test_429_reintenta_y_luego_crea` · `test_401_en_upsert_no_reintenta` |
-| CRUD | `fetch`, `update` con `set_metadata`, `delete` por id, `delete_all=True` | `test_crud_fetch_update_delete_y_delete_all` |
-| Híbrido | `BM25Retriever.from_documents`, `retriever_bm25.k = 5`, `as_retriever(search_kwargs={"k": 5, "namespace": NAMESPACE})`, `EnsembleRetriever` con `weights=[0.5, 0.5]` | `test_k_de_la_llamada_llega_al_bm25_y_a_pinecone` |
-| `RAGSystem` | `obtener_top_k` devuelve `contenido`, `fuente` y `categoria`. El `k` del sistema llega a los dos retrievers | `test_token_raro_queda_primero_y_el_default_es_top_5` |
-| Métricas | `evaluar` calcula `recall@5`, `precision@5`, `recall@5_promedio` y `precision@5_promedio` | `test_corpus_real_recupera_el_documento_esperado` |
+### Configuración e infraestructura cloud (Pinecone)
+
+`init_index.py` lee `PINECONE_API_KEY`, `OPENAI_API_KEY` o `ANTHROPIC_API_KEY`, e `INDEX_NAME` desde el `.env`. El archivo real no se versiona; el ejemplo vacío es `.env.example`. Si falta la clave de Pinecone, el proceso sale con `401/key: falta PINECONE_API_KEY en las variables de entorno.` y no imprime el valor.
+
+Si el índice no existe, lo crea Serverless (`ServerlessSpec`, aws, `us-east-1`, cosine, dimensión 1536, el ancho de `text-embedding-3-small`). Si ya existe con otro ancho (512, 768) o con otra métrica, aborta y no reintenta.
+
+Evidencia: `test_leer_config_toma_el_entorno` · `test_crea_indice_serverless_con_la_dimension_del_modelo` · `test_mismatch_de_dimension_no_reintenta` · `test_falta_api_key`
+
+### Pipeline de ingesta y gestión de metadatos
+
+`ingesta.py` carga documentos técnicos en `.txt`, `.md`, `.json` y `.pdf`. Los parte con `RecursiveCharacterTextSplitter.from_tiktoken_encoder`. El default es 600 tokens y 100 de solapamiento (dentro de 500–800) y el valor de la llamada es el que llega al splitter.
+
+Cada fragmento persiste el texto original en `metadata["text"]`, más `fuente`, `pagina` y `etiquetas` de categoría. La subida usa `PineconeVectorStore.from_documents` en el namespace `politicas-internas`, en lotes (`batch_size`, default 100). 429 y cortes de red se reintentan; 401 y un vector de otro ancho, no.
+
+Evidencia: `test_carga_txt_markdown_json_y_pdf` · `test_splitter_usa_el_chunk_size_de_la_llamada` · `test_metadata_sale_del_nombre_de_archivo` · `test_subida_guarda_texto_y_filtra_por_namespace` · `test_batch_size_llega_al_upsert_y_no_se_clava_en_100`
+
+### Implementación del recuperador híbrido
+
+`RAGSystem` encapsula un `EnsembleRetriever`. Adentro hay un `BM25Retriever` (palabras literales: `2FA`, nombres propios) y el retriever de `PineconeVectorStore` (similitud de vectores). Los pesos son `[0.5, 0.5]`. `obtener_top_k` recibe la consulta y devuelve 5 documentos con `contenido`, `fuente` y `categoria`. El `k` de la llamada llega al BM25 y a `search_kwargs`. La búsqueda lleva `namespace`.
+
+Evidencia: `test_k_de_la_llamada_llega_al_bm25_y_a_pinecone` · `test_token_raro_queda_primero_y_el_default_es_top_5` · `test_namespace_no_mezcla_al_tenant`
+
+### Evaluación cuantitativa de métricas
+
+`evaluate.py` lee 5 pares `{"pregunta", "documento_id_esperado"}` de `data/golden_set.json`. Cada consulta pide el top-5. Recall@5 vale 1 si el archivo esperado está entre esos 5. Precision@5 es la proporción de esos 5 que pertenecen a ese archivo. El resumen se imprime en consola: Recall@5 promedio 1 y Precision@5 promedio 0.20.
+
+Evidencia: `test_golden_set_tiene_cinco_preguntas` · `test_corpus_real_recupera_el_documento_esperado` · `evidencias/03-evaluate.txt`
 
 ## Contrato de namespaces y metadatos
 
-- **Corpus:** `politicas-internas`. Un solo espacio para las cuatro políticas.
+- **Corpus:** `politicas-internas`. Un solo espacio para las políticas de TechCorp.
 - **Entornos y tenants, aparte:** `ns-dev`, `ns-staging`, `ns-prod` y `ns-cliente-<id>`. Un upsert no mezcla dos espacios. Query, fetch, update y delete llevan `namespace=`.
 - **Metadata:** `text` (el fragmento), `source` (por ejemplo `politica_vacaciones.txt`), `categoria` (por ejemplo `politica vacaciones`), `chunk_id` (entero).
 - **Filtro:** `{"source": {"$eq": "politica_vacaciones.txt"}}` junto con `include_metadata=True`.
